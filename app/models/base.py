@@ -7,7 +7,7 @@
 
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchemaOpts
-from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import declared_attr
 
 from app.extensions import db
 from app.libs.flask_sqlalchemy import QueryType
@@ -50,8 +50,6 @@ class ModelBase(db.Model):
 
     @declared_attr
     def __mapper_args__(self):
-        if hasattr(self, 'create_time'):
-            return {"order_by": self.create_time.desc()}
         return {}
 
 

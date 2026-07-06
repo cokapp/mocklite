@@ -14,6 +14,17 @@ blueprint = Blueprint('mock_endpoint', __name__)
 mock_js = Mock().mock_js
 
 
+def _mock_to_dict(js_str):
+    """将 mock 模板字符串解析为 Python 原生 dict/list，兼容 py_mini_racer JSObject 不可序列化问题"""
+    if not js_str:
+        return js_str
+    try:
+        template = json.loads(js_str)
+        return Mock().mock(template)
+    except (json.JSONDecodeError, TypeError):
+        return js_str
+
+
 def _get_json(text):
     try:
         return json.loads(text)
@@ -82,16 +93,16 @@ def _is_matched_request_data(mock_data_item, req_json=None):
     return True
 
 
-@blueprint.route('/mock/<int:project_id>/<path:endpoint>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'])
-def mock_endpoint(project_id, endpoint):
-    project = MockProject.query.filter(MockProject.id == project_id, MockProject.status != -1).first()
+@blueprint.route('/mock/<project_name>/<path:endpoint>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'])
+def mock_endpoint(project_name, endpoint):
+    project = MockProject.query.filter(MockProject.name == project_name, MockProject.status != -1).first()
     if not project:
         return Response(response=json.dumps({'message': 'Project not found'}, ensure_ascii=False),
                         status=404, content_type='application/json')
 
     method = request.method
     mock_data_list = MockData.query.filter(
-        MockData.project_id == project_id,
+        MockData.project_id == project.id,
         MockData.method == method,
         MockData.status == 1
     ).all()
@@ -117,9 +128,9 @@ def mock_endpoint(project_id, endpoint):
         return Response(response=json.dumps({'message': 'No matched mock data', 'endpoint': endpoint_with_slash}, ensure_ascii=False),
                         status=404, content_type='application/json')
 
-    content = json.dumps(mock_js(matched_data.response), ensure_ascii=False) if matched_data.response else ''
+    content = json.dumps(_mock_to_dict(matched_data.response), ensure_ascii=False) if matched_data.response else ''
     content_type = matched_data.content_type or 'application/json'
-    headers = mock_js(matched_data.headers) if matched_data.headers else {}
+    headers = _mock_to_dict(matched_data.headers) if matched_data.headers else {}
 
     response_headers = {'Access-Control-Allow-Origin': '*', 'Content-Type': content_type}
     if isinstance(headers, dict):

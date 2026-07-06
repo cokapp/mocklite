@@ -8,7 +8,8 @@ import re
 import typing
 
 from ilogger import logger
-from mitmdump import DumpMaster, Options
+from mitmproxy.options import Options
+from mitmproxy.tools.dump import DumpMaster
 from mitmproxy import ctx, http
 from mitmproxy.script import concurrent
 from mitmproxy.utils import human
@@ -38,9 +39,12 @@ class FlowInterceptor:
 
     @staticmethod
     def running():
-        logger.info('FlowInterceptor is running, proxy server listening at http://{}'.format(
-            human.format_address(ctx.master.server.address)
-        ))
+        try:
+            address = human.format_address(ctx.master.server.address)
+        except AttributeError:
+            # mitmproxy 10.x: server address no longer on ctx.master.server
+            address = '{}:{}'.format(ctx.options.listen_host or '0.0.0.0', ctx.options.listen_port or 8888)
+        logger.info('FlowInterceptor is running, proxy server listening at http://{}'.format(address))
 
     @staticmethod
     def get_json(text):
@@ -142,8 +146,11 @@ class FlowInterceptor:
 
 
 if __name__ == '__main__':
-    opts = Options(listen_host='0.0.0.0', listen_port=8888, termlog_verbosity='warn', flow_detail=0, scripts=None,
-                   block_global=False)
-    m = DumpMaster(opts)
+    import asyncio
+    loop = asyncio.new_event_loop()
+    opts = Options(listen_host='0.0.0.0', listen_port=8888)
+    m = DumpMaster(opts, loop=loop, with_termlog=False)
+    m.options.block_global = False
+    m.options.flow_detail = 0
     m.addons.add(FlowInterceptor())
-    m.run()
+    loop.run_until_complete(m.run())

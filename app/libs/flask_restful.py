@@ -13,6 +13,23 @@ from marshmallow import ValidationError
 from app.libs.response import APIException, BadRequest, ServiceInternalError
 from traceback import print_exc
 
+
+# Werkzeug 3.x: request.json raises 415 when Content-Type is not application/json.
+# Patch Flask's Request to return None instead, restoring the old behavior
+# that flask-restful's RequestParser depends on when location includes 'json'.
+import flask.wrappers
+_orig_get_json = flask.wrappers.Request.get_json
+
+def _safe_get_json(self, *args, **kwargs):
+    kwargs.setdefault('silent', True)
+    try:
+        return _orig_get_json(self, *args, **kwargs)
+    except HTTPException:
+        return None
+
+flask.wrappers.Request.get_json = _safe_get_json
+
+
 class Resource(__Resource):
     pass
 

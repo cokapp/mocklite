@@ -6,12 +6,14 @@
 # @Time   : 2020/1/8 17:16
 from contextlib import contextmanager
 
-from flask_sqlalchemy import BaseQuery, SQLAlchemy as _SQLAlchemy, SessionBase
+from flask_sqlalchemy import SQLAlchemy as _SQLAlchemy
+from flask_sqlalchemy.query import Query as _Query
+from flask_sqlalchemy.session import Session as _Session
 
 from app.libs.response import NotFound
 
 
-class Query(BaseQuery):
+class Query(_Query):
     def get_or_404(self, ident, description=None):
         rv = self.get(ident)
         if not rv:
@@ -30,10 +32,10 @@ class QueryType(Query):
     def filter(self, *criterion) -> Query:
         pass
 
-    def filter_by(self, **kwargs) -> Query:
+    def filter_by(self, **kwargs) -> 'QueryType':
         pass
 
-class SessionType(SessionBase):
+class SessionType(_Session):
     """Just for Type Hint"""
     def query(self, *entities, **kwargs) -> QueryType:
         pass
