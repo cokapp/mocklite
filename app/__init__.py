@@ -14,6 +14,8 @@ from config import CONFIG
 def register_blueprints(_app):
     from app.api import v1_blueprint
     _app.register_blueprint(v1_blueprint)
+    from app.api.v1.mock_endpoint import blueprint as mock_endpoint_blueprint
+    _app.register_blueprint(mock_endpoint_blueprint)
 
 # 创建 app 的工厂函数
 def create_app(_config=CONFIG):

@@ -49,6 +49,11 @@ http {
             uwsgi_pass 127.0.0.1:5000;
         }
 
+        location /mock {
+            include uwsgi_params;
+            uwsgi_pass 127.0.0.1:5000;
+        }
+
         location /admin/ {
             proxy_pass http://127.0.0.1:9001/;
             # supervisor 有重定向，需要如下处理
